@@ -11,9 +11,14 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import ClientHandler.ClientHandler;
+import ClientHandler.IClientHandler;
 import ViewModel.MainViewModel;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Label;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 
 
 public class MainView implements Observer,Initializable {
@@ -22,23 +27,67 @@ public class MainView implements Observer,Initializable {
 	private Boolean isServerRunning;
 	private Thread serverThread;
 	private Boolean isNeedToStop;
-	private ServerSocket Socket;
-	private Socket newConnection;
+	private ServerSocket socket;
 	private ThreadPoolExecutor executionPool;
-	@FXML
-	public void StopStart()
+	
+	@Override
+	public void initialize(URL location, ResourceBundle resources) {
+		// TODO Auto-generated method stub
+		isServerRunning = false;
+		isNeedToStop = false;
+		executionPool = new ThreadPoolExecutor(10,10, 2, TimeUnit.MINUTES, new ArrayBlockingQueue<>(10));
+		try {
+			socket = new ServerSocket(8888);//CONFIG
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	public void startServerThread()
 	{
-		if (!isServerRunning)
-		{
-			isServerRunning = true;
-			serverThread.start();
-		}
-		else	
-		{
-			isServerRunning = false;
-			isNeedToStop =true;
-			serverThread.interrupt();
-		}
+		isServerRunning = true;
+		isNeedToStop = false;
+		serverThread = new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				while(!isNeedToStop)
+				{
+					try {
+						Socket newConnection = socket.accept();
+						IClientHandler ch = new ClientHandler(null);
+						ch.handleClient(newConnection);
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					//Socket newConnection = socket.accept();
+					//create new client handler
+					if (isNeedToStop)
+					{
+						//handle client
+						
+					}
+					else
+					{
+						//Can't handle client right now..Server need to stop
+						 
+					}
+				}
+				System.out.println("Server thread is finish");
+				
+			}
+		});
+		serverThread.start();
+		System.out.println("Server is on");
+		
+	}
+	public void stopServerThread()
+	{
+		isServerRunning = false;
+		isNeedToStop = true;
+		System.out.println("Server is off");
 	}
 	
 	@Override
@@ -47,32 +96,6 @@ public class MainView implements Observer,Initializable {
 		
 	}
 
-	@Override
-	public void initialize(URL location, ResourceBundle resources) {
-		// TODO Auto-generated method stub
-		isServerRunning = false;
-		isNeedToStop = false;
-		executionPool = new ThreadPoolExecutor(10,10, 2, TimeUnit.MINUTES, new ArrayBlockingQueue<>(10));
-		try {
-			Socket = new ServerSocket(8888);//CONFIG
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		serverThread = new Thread(()->{
-			System.out.println("Server is running");
-			while (!isNeedToStop)
-			{
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-			System.out.println("Server Is Stop");
-		});
-	}
 
 	
 	public MainViewModel getViewModel() {
@@ -82,6 +105,13 @@ public class MainView implements Observer,Initializable {
 	public void setViewModel(MainViewModel viewModel) {
 		this.viewModel = viewModel;
 	}
-
+	@FXML
+	public void StopStart()
+	{
+		if (isServerRunning)
+			stopServerThread();
+		else	
+			startServerThread();
+	}
 	
 }
