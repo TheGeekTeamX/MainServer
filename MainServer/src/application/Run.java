@@ -28,7 +28,7 @@ public class Run extends Application {
 		FXMLLoader loader = new FXMLLoader();
 		BorderPane rootView;
 		try {
-			MainModel model = new MainModel();// MODEL
+			MainModel model = MainModel.getInstance();// MODEL
 			MainViewModel viewModel = new MainViewModel(model);// VIEWMODEL
 			model.addObserver(viewModel);
 			rootView = loader.load(getClass().getResource("View.fxml").openStream());
@@ -41,26 +41,6 @@ public class Run extends Application {
 			scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
 			primaryStage.setScene(scene);
 			primaryStage.show();
-
-			/* hibernate */
-			Logger.getLogger("org.hibernate").setLevel(Level.SEVERE);
-			Configuration configuration = (new Configuration()).configure();
-			factory = configuration.buildSessionFactory();
-			// Add a few employee records in the database
-			int empID1 = addEmployee("Zara", "Ali", 1000);
-			int empID2 = addEmployee("Daisy", "Das", 5000);
-			int empID3 = addEmployee("John", "Paul", 10000);
-			int empID4 = addEmployee("Jane", "Paul", 8000);
-			System.out.println("Employees list:");
-			printEmployees();
-			System.out.println("Employees whose name start with J:");
-			printEmployeesWhoseNameStartsWith("J");
-			System.out.println("Updating salary for employee 1");
-			updateSalary(empID1, 2333.33);
-			System.out.println("Deleting employee 3");
-			deleteEmployee(empID3);
-			System.out.println("Employees list:");
-			printEmployees();
 
 		} catch (Exception e) {
 			e.printStackTrace();

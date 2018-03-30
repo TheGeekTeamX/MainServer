@@ -1,2 +1,6 @@
 /application/
 /hibernate.cfg.xml
+/Model/
+/Enums/
+/ViewModel/
+/View/

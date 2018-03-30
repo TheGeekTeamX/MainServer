@@ -3,8 +3,12 @@ package ViewModel;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -31,6 +35,7 @@ public class MainViewModel extends Observable implements Observer,IController {
 	public MainViewModel(MainModel model) {
 		super();
 		this.model = model;
+		model.testDB();
 		isServerRunning = false;
 		isNeedToStop = false;
 		executionPool = new ThreadPoolExecutor(10,10, 2, TimeUnit.MINUTES, new ArrayBlockingQueue<>(10));
@@ -45,11 +50,14 @@ public class MainViewModel extends Observable implements Observer,IController {
 	{
 		IClientHandler ch = new ClientHandler(this);
 		ch.handleClient(newConnection);
+		setChanged();
+		notifyObservers(new ConnectionData(UUID.randomUUID().toString(), new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime()), ""));
 	}
 	public void startServerThread()
 	{
 		isServerRunning = true;
 		isNeedToStop = false;
+		
 		serverThread = new Thread(new Runnable() {
 			
 			@Override
