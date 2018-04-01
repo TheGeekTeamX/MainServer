@@ -27,36 +27,48 @@ public class MainView implements Observer,Initializable {
 	@FXML
 	private Label connectionsNumLabel;
 	private StringProperty connectionsNumStr;
-	
+	private int connectionsNum;
+	@FXML
+	private Label onlineConnectionsNumLabel;
+	private StringProperty onlineConnectionsNumStr;
+	private int onlineConnectionsNum;
+
+
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
 		// TODO Auto-generated method stub
 		isServerRunning = false;
 		initGUIComponents();
 	}
+	
 	public void initGUIComponents()
 	{
 		state.setFill(Color.RED);
 		connectionsNumStr = new SimpleStringProperty();
 		setConnectionsNumStr(""+0);
 		connectionsNumLabel.textProperty().bind(connectionsNumStr);
+		onlineConnectionsNumStr = new SimpleStringProperty();
+		setOnlineConnectionsNumStr(""+0);
+		onlineConnectionsNumLabel.textProperty().bind(onlineConnectionsNumStr);
 	}
-
 
 	@Override
 	public void update(Observable arg0, Object arg1) {
 		// TODO Auto-generated method stub
 		if (arg0 == viewModel)
 		{
-			if (arg1 instanceof ConnectionData)
+			switch(arg1.toString())
 			{
-				
+				case "New":
+					//setConnectionsNum(connectionsNum+1);
+					//setOnlineConnectionsNum(onlineConnectionsNum+1);
+					break;
+				case "End":
+					//setOnlineConnectionsNum(onlineConnectionsNum-1);
+					break;
 			}
 		}
 	}
-
-
-	
 
 	@FXML	
 	public void StopStart()
@@ -73,51 +85,18 @@ public class MainView implements Observer,Initializable {
 		//testConnections();
 	}
 	
-	private void testConnections()
-	{
-		int i = 0;
-		while(i<10)
-		{
-			setConnectionsNumStr(""+(i+1));
-			i++;
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-	}
 	/*****Get & Set*****/
 	public Boolean getIsServerRunning() {
 		return isServerRunning;
 	}
 
-
 	public void setIsServerRunning(Boolean isServerRunning) {
 		this.isServerRunning = isServerRunning;
 	}
 
-
-	public Circle getState() {
-		return state;
-	}
-
-
 	public void setState(Circle state) {
 		this.state = state;
 	}
-
-
-	public Label getConnectionsNumLabel() {
-		return connectionsNumLabel;
-	}
-
-
-	public void setConnectionsNumLabel(Label connectionsNumLabel) {
-		this.connectionsNumLabel = connectionsNumLabel;
-	}
-
 
 	public MainViewModel getViewModel() {
 		return viewModel;
@@ -131,9 +110,34 @@ public class MainView implements Observer,Initializable {
 		return connectionsNumStr.get();
 	}
 
-
-	public void setConnectionsNumStr(String connectionsNumStr) {
-		this.connectionsNumStr.setValue(connectionsNumStr);
+	public void setConnectionsNumStr(String ConnectionsNumStr) {
+		this.connectionsNumStr.setValue(ConnectionsNumStr);
+	}
+	
+	public String getOnlineConnectionsNumStr() {
+		return onlineConnectionsNumStr.get();
 	}
 
+	public void setOnlineConnectionsNumStr(String onlineConnectionsNumStr) {
+		this.onlineConnectionsNumStr.setValue(onlineConnectionsNumStr);
+	}
+
+	public int getConnectionsNum() {
+		return connectionsNum;
+	}
+	
+	public void setConnectionsNum(int connectionsNum) {
+		this.connectionsNum = connectionsNum;
+		setConnectionsNumStr(""+connectionsNum);
+	}
+	
+	public int getOnlineConnectionsNum() {
+		return onlineConnectionsNum;
+	}
+	
+	public void setOnlineConnectionsNum(int onlineConnectionsNum) {
+		this.onlineConnectionsNum = onlineConnectionsNum;
+		setOnlineConnectionsNumStr(""+onlineConnectionsNum);
+		System.out.println(onlineConnectionsNum);
+	}
 }

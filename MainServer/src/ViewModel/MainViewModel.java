@@ -50,8 +50,8 @@ public class MainViewModel extends Observable implements Observer,IController {
 	{
 		IClientHandler ch = new ClientHandler(this);
 		ch.handleClient(newConnection);
+		notifyObservers("End");
 		setChanged();
-		notifyObservers(new ConnectionData(UUID.randomUUID().toString(), new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime()), ""));
 	}
 	public void startServerThread()
 	{
@@ -68,6 +68,7 @@ public class MainViewModel extends Observable implements Observer,IController {
 					System.out.println("test");
 					try {
 						Socket newConnection = socket.accept();
+						notifyObservers("New");
 						createNewClientHandler(newConnection);
 					} catch (IOException e) {
 						// TODO Auto-generated catch block

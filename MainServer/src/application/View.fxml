@@ -43,9 +43,19 @@
                                     <Font name="Arial Bold" size="24.0" />
                                  </font>
                               </Label>
-                              <Label fx:id="connectionsNumLabel" layoutX="176.0" layoutY="16.0" text="0" textFill="#00a1ff">
+                              <Label fx:id="connectionsNumLabel" layoutX="181.0" layoutY="20.0" text="0" textFill="#23b3e8">
                                  <font>
-                                    <Font size="24.0" />
+                                    <Font name="Arial Bold" size="24.0" />
+                                 </font>
+                              </Label>
+                              <Label layoutX="14.0" layoutY="51.0" text="Online Connections:" textFill="#23b3e8">
+                                 <font>
+                                    <Font name="System Bold" size="24.0" />
+                                 </font>
+                              </Label>
+                              <Label fx:id="onlineConnectionsNumLabel" layoutX="250.0" layoutY="55.0" text="0" textFill="#23b3e8">
+                                 <font>
+                                    <Font name="Arial Bold" size="24.0" />
                                  </font>
                               </Label>
                            </children>
