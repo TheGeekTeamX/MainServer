@@ -116,9 +116,10 @@ public class MainViewModel extends Observable implements Observer,IController {
 	}
 
 	@Override
-	public ResponseData execute(RequestType reqType, RequestData ReqData) {
+	public ResponseData execute(RequestData ReqData) {
 		// TODO Auto-generated method stub
-		switch (reqType) {
+		int x=0;
+		switch (ReqData.getType()) {
 		case DataEditing:
 			System.out.println("DataEditing");
 			break;
@@ -140,5 +141,7 @@ public class MainViewModel extends Observable implements Observer,IController {
 		}
 		return null;
 	}
+	
+	
 
 }

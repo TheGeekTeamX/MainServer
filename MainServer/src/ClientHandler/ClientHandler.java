@@ -15,7 +15,6 @@ public class ClientHandler implements IClientHandler{
 	@Override
 	public void handleClient(Socket socket) {
 		// TODO Auto-generated method stub
-		
 	}
 	
 	
