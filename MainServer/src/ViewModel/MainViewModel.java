@@ -65,7 +65,6 @@ public class MainViewModel extends Observable implements Observer,IController {
 				// TODO Auto-generated method stub
 				while(!isNeedToStop)
 				{
-					System.out.println("test");
 					try {
 						Socket newConnection = socket.accept();
 						notifyObservers("New");
@@ -87,19 +86,16 @@ public class MainViewModel extends Observable implements Observer,IController {
 						 
 					}
 				}
-				System.out.println("Server thread is finish");
 				
 			}
 		});
 		serverThread.start();
-		System.out.println("Server is on");
 		
 	}
 	public void stopServerThread()
 	{
 		isServerRunning = false;
 		isNeedToStop = true;
-		System.out.println("Server is off");
 	}
 	public Boolean interrupt(Boolean flag)
 	{
