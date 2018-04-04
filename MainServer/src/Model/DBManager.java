@@ -1,61 +1,161 @@
 package Model;
 
-import java.net.URL;
-import java.util.ResourceBundle;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
-
-import DB.Employee;
-import Enums.DBAction;
-import javafx.fxml.Initializable;
+import DB.*;
+import Enums.*;
 
 public class DBManager {
 	private static SessionFactory factory;
 	private Session session;
 	private static DBManager instance = null;
 	
-
-	public void dbTest()
+	public void test()
 	{
-		System.out.println("Test start");
-		Employee emp = new Employee("test", "test", 300.0);
-		int empID = addToDataBase(emp);
-		System.out.println("Result: "+empID);
+		
+	}
+
+	private IDBEntity get(int id, DBEntityType entityType)
+	{
+		session = factory.openSession();
+		Transaction tx = null;
+		IDBEntity entity = null;
+		try {
+			tx = session.beginTransaction();
+			switch (entityType)
+			{
+			case User:
+				entity= session.get(User.class, id);
+				break;
+			case UserEvent:
+				entity = session.get(UserEvent.class, id);
+				break;
+			case Event:
+				entity = session.get(Event.class, id);
+				break;
+			case Contact:
+				entity = session.get(Contact.class, id);
+				break;
+			default:
+				break;
+			}
+		} catch (HibernateException e) {
+			if (tx != null)
+				tx.rollback();
+			return null;
+		} finally {
+			session.close();
+		}
+		return entity;
 	}
 	private int addToDataBase(Object obj)
 	{
-		Transaction tx = null;
-		int empID = 0;
 		session = factory.openSession();
+		Transaction tx = null;
+		int id=0;
 		try {
 			tx = session.beginTransaction();
-			empID = (Integer) session.save(obj);
+			id = (int)session.save(obj);
 			tx.commit();
 		} catch (HibernateException e) {
 			if (tx != null)
 				tx.rollback();
-			e.printStackTrace();
+			return -1;
 		} finally {
 			session.close();
 		}
-		return empID;
+		return id;
 	}
 	
-	private void editInDataBase()
+	private Boolean deleteFromDataBase(int id,DBEntityType entityType)
 	{
-		
+		session = factory.openSession();
+		Transaction tx = null;
+		try {
+			tx = session.beginTransaction();
+			IDBEntity entity;
+			switch (entityType)
+			{
+			case User:
+				entity= session.get(User.class, id);
+				break;
+			case UserEvent:
+				entity = session.get(UserEvent.class, id);
+				break;
+			case Event:
+				entity = session.get(Event.class, id);
+				break;
+			case Contact:
+				entity = session.get(Contact.class, id);
+				break;
+			default:
+				return false;
+			}
+			if(entity != null)
+			{
+				session.delete(entity);
+				tx.commit();
+			}
+			else
+				return false;
+		} catch (HibernateException e) {
+			if (tx != null)
+				tx.rollback();
+			return false;
+		} finally {
+			session.close();
+		}
+		return true;
 	}
 	
-	private void deleteFromDataBase()
+	private Boolean editInDataBase(int id,DBEntityType entityType,IDBEntity updatedObj)
 	{
-		
+		session = factory.openSession();
+		Transaction tx = null;
+		try {
+			tx = session.beginTransaction();
+			IDBEntity entity;
+			switch (entityType)
+			{
+			case User:
+				entity= session.get(User.class, id);
+				break;
+			case UserEvent:
+				entity = session.get(UserEvent.class, id);
+				break;
+			case Event:
+				entity = session.get(Event.class, id);
+				break;
+			case Contact:
+				entity = session.get(Contact.class, id);
+				break;
+			default:
+				return false;
+			}
+			if(entity != null)
+			{
+				entity.update(updatedObj);
+				session.update(entity);
+				tx.commit();
+			}
+			else
+				return false;
+		} catch (HibernateException e) {
+			if (tx != null)
+				tx.rollback();
+			return false;
+		} finally {
+			session.close();
+		}
+		return true;
 	}
+	
 	
 	public void execute(DBAction action)
 	{

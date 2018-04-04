@@ -24,7 +24,7 @@ public class MainViewModel extends Observable implements Observer,IController {
 	private Thread serverThread;
 	private Boolean isNeedToStop;
 	private ServerSocket socket;
-	private ThreadPoolExecutor executionPool;
+	private PausableThreadPoolExecutor executionPool;
 
 	@Override
 	public void update(Observable o, Object arg) {
@@ -38,7 +38,7 @@ public class MainViewModel extends Observable implements Observer,IController {
 		model.testDB();
 		isServerRunning = false;
 		isNeedToStop = false;
-		executionPool = new ThreadPoolExecutor(10,10, 2, TimeUnit.MINUTES, new ArrayBlockingQueue<>(10));
+		executionPool = new PausableThreadPoolExecutor(10,10, 2, TimeUnit.MINUTES, new ArrayBlockingQueue<>(10));
 		try {
 			socket = new ServerSocket(8888);//CONFIG
 		} catch (IOException e) {
@@ -49,9 +49,17 @@ public class MainViewModel extends Observable implements Observer,IController {
 	public void createNewClientHandler(Socket newConnection)
 	{
 		IClientHandler ch = new ClientHandler(this);
-		ch.handleClient(newConnection);
-		notifyObservers("End");
-		setChanged();
+		executionPool.execute(new Runnable() {
+			
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				ch.handleClient(newConnection);
+				
+			}
+		});;
+		
+		//ch.handleClient(newConnection);
 	}
 	public void startServerThread()
 	{
@@ -73,8 +81,6 @@ public class MainViewModel extends Observable implements Observer,IController {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-					//Socket newConnection = socket.accept();
-					//create new client handler
 					if (isNeedToStop)
 					{
 						//handle client
@@ -115,7 +121,6 @@ public class MainViewModel extends Observable implements Observer,IController {
 	@Override
 	public ResponseData execute(RequestData ReqData) {
 		// TODO Auto-generated method stub
-		int x=0;
 		switch (ReqData.getType()) {
 		case DataEditing:
 			System.out.println("DataEditing");

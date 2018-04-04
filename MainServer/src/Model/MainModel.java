@@ -14,13 +14,13 @@ public class MainModel extends Observable {
 		}
 		return instance;
 	}
-	public void testDB()
-	{
-		//dbManager.dbTest();
-	}
 	private void init()
 	{
 		dbManager = DBManager.getInstance();
+	}
+	public void testDB()
+	{
+		dbManager.test();
 	}
 
 }

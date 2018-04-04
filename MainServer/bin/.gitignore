@@ -1,7 +1,6 @@
-/application/
-/hibernate.cfg.xml
+/DB/
+/hibernate.cfg.out.xml
 /Model/
-/Enums/
+/application/
 /ViewModel/
-/View/
-/ClientHandler/
+/Enums/
