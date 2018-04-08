@@ -25,22 +25,22 @@ public class Contact implements IDBEntity{
 	public void setId(int id) {
 		this.id = id;
 	}
-	public User getUserId() {
+	public User getUser() {
 		return user;
 	}
-	public void setUserId(User userId) {
-		this.user = userId;
+	public void setUser(User user) {
+		this.user = user;
 	}
-	public User getFriendId() {
+	public User getFriend() {
 		return friend;
 	}
-	public void setFriendId(User friendId) {
-		this.friend = friendId;
+	public void setFriendId(User friend) {
+		this.friend = friend;
 	}
-	public Contact(User userId, User friendId) {
+	public Contact(User user, User friend) {
 		super();
-		this.user = userId;
-		this.friend = friendId;
+		this.user = user;
+		this.friend = friend;
 	}
 	@Override
 	public void update(IDBEntity other) {

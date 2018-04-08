@@ -1,141 +1,125 @@
 package ViewModel;
 
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.Observable;
 import java.util.Observer;
-import java.util.UUID;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
-import ClientHandler.ClientHandler;
-import ClientHandler.IClientHandler;
-import Enums.RequestType;
+import DB.Contact;
+import DB.Credential;
+import DB.User;
+import Enums.DBEntityType;
 import Model.MainModel;
+import Requests.*;
+import Responses.*;
+import ResponsesEntitys.UserData;
 
 public class MainViewModel extends Observable implements Observer,IController {
 	private MainModel model;
-	private Boolean isServerRunning;
-	private Thread serverThread;
-	private Boolean isNeedToStop;
-	private ServerSocket socket;
-	private PausableThreadPoolExecutor executionPool;
-
-	@Override
-	public void update(Observable o, Object arg) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	public MainViewModel(MainModel model) {
-		super();
-		this.model = model;
-		model.testDB();
-		isServerRunning = false;
-		isNeedToStop = false;
-		executionPool = new PausableThreadPoolExecutor(10,10, 2, TimeUnit.MINUTES, new ArrayBlockingQueue<>(10));
-		try {
-			socket = new ServerSocket(8888);//CONFIG
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-	public void createNewClientHandler(Socket newConnection)
+	
+	public ResponseData EditUser(RequestData reqData)
 	{
-		IClientHandler ch = new ClientHandler(this);
-		executionPool.execute(new Runnable() {
-			
-			@Override
-			public void run() {
-				// TODO Auto-generated method stub
-				ch.handleClient(newConnection);
-				
-			}
-		});;
-		
-		//ch.handleClient(newConnection);
+		User user = model.getDbManager().getUser(reqData.getUserEmail());
+		if(user == null)
+			return new ErrorResponse("User Is Not Exist");
+		//edit profile picture
+		user.setCountry(((EditUserRequestData)reqData).getCountry());
+		user.setPhoneNumber(((EditUserRequestData)reqData).getPhoneNumber());
+		user.setFullName(((EditUserRequestData)reqData).getFullName());	
+		return new EditResponseData(model.getDbManager().editInDataBase(user.getId(), DBEntityType.User, user));
 	}
-	public void startServerThread()
+	
+	private ResponseData EditContactsList(RequestData reqData)
 	{
-		isServerRunning = true;
-		isNeedToStop = false;
-		
-		serverThread = new Thread(new Runnable() {
-			
-			@Override
-			public void run() {
-				// TODO Auto-generated method stub
-				while(!isNeedToStop)
-				{
-					try {
-						Socket newConnection = socket.accept();
-						notifyObservers("New");
-						createNewClientHandler(newConnection);
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					if (isNeedToStop)
-					{
-						//handle client
-						
-					}
-					else
-					{
-						//Can't handle client right now..Server need to stop
-						 
-					}
-				}
-				
+		User user = model.getDbManager().getUser(reqData.getUserEmail());
+		if(user == null)
+			return new ErrorResponse("User Is Not Exist");
+		ArrayList <Contact> currentContactsList = model.getDbManager().getContactsList(user.getId());
+		if (currentContactsList.size() == 0)
+			return new EditResponseData(false);
+		LinkedList <String> newContactsList = ((EditContactsListRequestData)reqData).getUpdatedFriendsList();
+		if (newContactsList.size() == 0)
+			return new EditResponseData(false);
+		currentContactsList.forEach(contact -> {
+			if(!newContactsList.contains(""+contact.getFriend().getId()))
+			{				
+				System.out.println(contact.getId());
+				model.getDbManager().deleteFromDataBase(contact.getId(), DBEntityType.Contact);
 			}
 		});
-		serverThread.start();
 		
+		return new EditResponseData(true);
 	}
-	public void stopServerThread()
+	
+	private ResponseData changePassword(RequestData reqData)
 	{
-		isServerRunning = false;
-		isNeedToStop = true;
-	}
-	public Boolean interrupt(Boolean flag)
-	{
-		isServerRunning = !flag;
-		if (flag)//ThreadWasRunning
-		{
-			stopServerThread();
-		}
-		else//ThreadWasNotRunning
-		{
-			startServerThread();
-		}
-		return isServerRunning;
-		
-	}
+		String oldPass = ((ChangePasswordRequestData)reqData).getOldPassword();
+		String newPass = ((ChangePasswordRequestData)reqData).getNewPassword();
+		User user = model.getDbManager().getUser(reqData.getUserEmail());
+		if(user == null)
+			return new ErrorResponse("User Is Not Exist");
+		Credential credential = model.getDbManager().getCredential(user.getId());
+		if(credential == null)
+			return new ErrorResponse("Credential Is Not Exist");
 
+		if (!credential.getCredntial().equals(oldPass))
+			return new ErrorResponse("Old Password Is Incorrect");
+
+		if (newPass.equals(oldPass))
+			return new ErrorResponse("Both Credentials Are The Same");
+		credential.setCredntial(newPass);
+		Boolean res =model.getDbManager().editInDataBase(credential.getId(), DBEntityType.Credential, credential);
+		return new EditResponseData(true);
+	}
+	
+	private ResponseData addFriend(RequestData reqData)
+	{
+		User user = model.getDbManager().getUser(reqData.getUserEmail());
+		User friend = model.getDbManager().getUser(((AddFriendRequestData)reqData).getFriendMail());
+		
+		if(user == null)
+			return new ErrorResponse("User Is Not Exist");
+		else if(friend == null)
+			return new ErrorResponse("Friend Is Not Exist");
+		else if(user.getId() == friend.getId())
+			return new ErrorResponse("Both Users Are The Same");
+		else
+		{
+			model.getDbManager().addToDataBase(new Contact(user, friend));
+			return new AddFriendResponseData(new UserData(friend.getFullName(), friend.getEmail(), "Image URL"));
+		}
+			
+	}
+	
 	@Override
-	public ResponseData execute(RequestData ReqData) {
+	public ResponseData execute(RequestData reqData) {
 		// TODO Auto-generated method stub
-		switch (ReqData.getType()) {
-		case DataEditing:
-			System.out.println("DataEditing");
+		switch (reqData.getType()) {
+		case AddFriendRequest:
+			return addFriend(reqData);//checked
+		case ChangePasswordRequest:
+			return changePassword(reqData);//checked
+		case CloseEventRequest:
 			break;
-		case DataRequest:
-			System.out.println("DataRequest");
+		case CreateEventRequest:
 			break;
-		case OpenEvent:
-			System.out.println("OpenEvent");
+		case CreateUserRequest:
 			break;
-		case ProtocolRequest:
-			System.out.println("ProtocolRequest");
+		case EditContactsListRequest:
+			return EditContactsList(reqData);//checked
+		case EditUserRequest:
+			return EditUser(reqData);//checked
+		case EventProtocolRequest:
 			break;
-		case RecordSending:
-			System.out.println("RecordSending");
+		case EventsListRequest:
+			break;
+		case ContactsListRequest:
+			break;
+		case LoginRequest:
+			break;
+		case ProfilePictureRequest:
+			break;
+		case UpdateProfilePictureRequest:
 			break;
 		default:
 			System.out.println("default");
@@ -144,6 +128,21 @@ public class MainViewModel extends Observable implements Observer,IController {
 		return null;
 	}
 	
-	
+	@Override	
+	public void update(Observable o, Object arg) {
+		// TODO Auto-generated method stub
+		
+	}
 
+	public MainModel getModel() {
+		return model;
+	}
+
+	public MainViewModel(MainModel model) {
+		super();
+		this.model = model;
+		//model.testDB();
+		EditUser(new EditUserRequestData("A", "Sahar Changed", "99999999", "Change", ""));
+	}
+	
 }

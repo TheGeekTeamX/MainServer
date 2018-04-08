@@ -22,5 +22,9 @@ public class MainModel extends Observable {
 	{
 		dbManager.test();
 	}
+	public DBManager getDbManager() {
+		return dbManager;
+	}
+	
 
 }

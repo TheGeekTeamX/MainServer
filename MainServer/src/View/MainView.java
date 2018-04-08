@@ -1,18 +1,31 @@
 package View;
 
 
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.URL;
 import java.util.Observable;
 import java.util.Observer;
 import java.util.ResourceBundle;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
+import ClientHandler.ClientHandler;
+import ClientHandler.IClientHandler;
+import DB.User;
 import ViewModel.ConnectionData;
 import ViewModel.MainViewModel;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 
@@ -22,6 +35,10 @@ public class MainView implements Observer,Initializable {
 
 	private MainViewModel viewModel;
 	private Boolean isServerRunning;
+	private Boolean isNeedToStop;
+	private Thread serverThread;	
+	private ServerSocket socket;
+	private PausableThreadPoolExecutor executionPool;
 	@FXML
 	private Circle state;
 	@FXML
@@ -32,13 +49,36 @@ public class MainView implements Observer,Initializable {
 	private Label onlineConnectionsNumLabel;
 	private StringProperty onlineConnectionsNumStr;
 	private int onlineConnectionsNum;
-
+	@FXML
+	private Button AddUserButton;
+	@FXML
+	private TextField userEmail;
+	@FXML
+	private TextField userName;
+	@FXML
+	private TextField userPhoneNumber;
+	@FXML
+	private TextField userCountry;
 
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
 		// TODO Auto-generated method stub
-		isServerRunning = false;
 		initGUIComponents();
+		initServer();
+
+	}
+	
+	public void initServer()
+	{
+		isServerRunning = false;
+		isNeedToStop = false;
+		try {
+			socket = new ServerSocket(8888);//CONFIG
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		executionPool = new PausableThreadPoolExecutor(10, 1000, 120, TimeUnit.SECONDS, new ArrayBlockingQueue<>(10));
 	}
 	
 	public void initGUIComponents()
@@ -50,6 +90,15 @@ public class MainView implements Observer,Initializable {
 		onlineConnectionsNumStr = new SimpleStringProperty();
 		setOnlineConnectionsNumStr(""+0);
 		onlineConnectionsNumLabel.textProperty().bind(onlineConnectionsNumStr);
+		AddUserButton.setOnMouseClicked(new EventHandler<MouseEvent>() {
+
+			@Override
+			public void handle(MouseEvent event) {
+				// TODO Auto-generated method stub
+				User u = new User(userEmail.getText(),userName.getText(),userPhoneNumber.getText(),userCountry.getText());
+				viewModel.getModel().getDbManager().addToDataBase(u);
+			}
+		});
 	}
 
 	@Override
@@ -57,32 +106,95 @@ public class MainView implements Observer,Initializable {
 		// TODO Auto-generated method stub
 		if (arg0 == viewModel)
 		{
-			switch(arg1.toString())
-			{
-				case "New":
-					//setConnectionsNum(connectionsNum+1);
-					//setOnlineConnectionsNum(onlineConnectionsNum+1);
-					break;
-				case "End":
-					//setOnlineConnectionsNum(onlineConnectionsNum-1);
-					break;
-			}
+
 		}
 	}
 
 	@FXML	
 	public void StopStart()
 	{
-		isServerRunning = viewModel.interrupt(isServerRunning);
-		if(isServerRunning)
-		{
-			state.setFill(Color.LAWNGREEN);
-		}
+		isServerRunning = interrupt(isServerRunning);
+		state.setFill(isServerRunning ? Color.LAWNGREEN : Color.RED);
+	}
+	public Boolean interrupt(Boolean flag)
+	{
+		
+		if (flag)
+			stopServerThread();
 		else
-		{
-			state.setFill(Color.RED);
-		}
-		//testConnections();
+			startServerThread();
+		return !flag;
+		
+	}
+	public void stopServerThread()
+	{
+		isServerRunning = false;
+		isNeedToStop = true;
+	}
+	public void createNewClientHandler(Socket newConnection)
+	{
+		
+		IClientHandler ch = new ClientHandler();
+		executionPool.execute(new Runnable() {
+			
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				ch.handleClient(newConnection , viewModel);
+				
+			}
+		});;
+		
+		//ch.handleClient(newConnection);
+	}
+	public void createNewConnection(Socket socket)
+	{
+		Platform.runLater(new Runnable() {
+			
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				setConnectionsNum(getConnectionsNum()+1);
+				setOnlineConnectionsNum(getOnlineConnectionsNum()+1);			
+			}
+		});
+		createNewClientHandler(socket);
+	}
+	public void startServerThread()
+	{
+		isServerRunning = true;
+		isNeedToStop = false;
+		
+		serverThread = new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				while(!isNeedToStop)
+				{
+					try {
+						Socket newConnection = socket.accept();
+						createNewConnection(newConnection);
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					if (isNeedToStop)
+					{
+						//handle client
+						
+					}
+					else
+					{
+						//Can't handle client right now..Server need to stop
+						 
+					}
+				}
+				
+			}
+		});
+		serverThread.start();
+		
 	}
 	
 	/*****Get & Set*****/
@@ -138,6 +250,5 @@ public class MainView implements Observer,Initializable {
 	public void setOnlineConnectionsNum(int onlineConnectionsNum) {
 		this.onlineConnectionsNum = onlineConnectionsNum;
 		setOnlineConnectionsNumStr(""+onlineConnectionsNum);
-		System.out.println(onlineConnectionsNum);
 	}
 }

@@ -5,16 +5,15 @@ import java.net.Socket;
 import ViewModel.IController;
 
 public class ClientHandler implements IClientHandler{
-	private IController controller;
 
-	public ClientHandler(IController controller) {
+	public ClientHandler() {
 		super();
-		this.controller = controller;
 	}
-
+	
 	@Override
-	public void handleClient(Socket socket) {
+	public void handleClient(Socket socket , IController controller) {
 		// TODO Auto-generated method stub
+		
 	}
 	
 	

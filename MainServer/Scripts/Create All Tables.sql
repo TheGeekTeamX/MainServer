@@ -1,0 +1,36 @@
+create table Users(
+	Id integer identity(1,1) primary key,
+	Email nvarchar(50) not null,
+	FullName nvarchar (50) not null,
+	PhoneNumber nvarchar(50),
+	Country nvarchar(20),
+)
+
+create table Events(
+	Id integer identity(1,1) primary key,
+	AdminId integer not null,
+	DateCreated date not null,
+	IsFinished bit not null,
+	IsConverted bit not null,
+	foreign key (AdminId) references Users(Id)	
+)
+
+
+create table Contacts(
+	Id int identity(1,1) primary key,
+	UserId int not null,
+	FriendId int not null,
+	foreign key (UserId) references Users(Id),
+	foreign key (FriendId) references Users(Id)	
+)
+
+
+create table UserEvents(
+	Id integer identity(1,1) primary key,
+	UserId int not null,
+	EventId int not null,
+	foreign key (UserId) references Users(Id),
+	foreign key (EventId) references Events(Id)	
+)
+
+

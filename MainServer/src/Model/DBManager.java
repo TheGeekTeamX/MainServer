@@ -1,15 +1,22 @@
 package Model;
 
 
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.query.Query;
+
 import DB.*;
 import Enums.*;
+
 
 public class DBManager {
 	private static SessionFactory factory;
@@ -18,10 +25,36 @@ public class DBManager {
 	
 	public void test()
 	{
-		
+		User u = getUser("Test123@gmail.com");
+		System.out.println(u.toString());
 	}
 
-	private IDBEntity get(int id, DBEntityType entityType)
+	public ArrayList<Contact> getContactsList(int userId)
+	{
+		session = factory.openSession();
+		session.beginTransaction();
+		ArrayList<Contact> list = (ArrayList<Contact>)session.createQuery(String.format("from Contacts where UserId = " + userId)).list();
+		session.close();
+		return list;
+	}
+	public User getUser(String email)
+	{
+		session = factory.openSession();
+		session.beginTransaction();
+		ArrayList<User> list = (ArrayList<User>)session.createQuery(String.format("from Users where Email like '%1$s'", email)).list();
+		session.close();
+		return list != null ? (User)list.get(0) : null;
+	}
+	public Credential getCredential(int userId)
+	{
+		session = factory.openSession();
+		session.beginTransaction();
+		LinkedList<Credential> list = (LinkedList<Credential>)session.createQuery("from Credentials where UserId = " + userId).list();
+		session.close();
+		return list != null ? (Credential)list.get(0) : null;
+	}
+	
+	public IDBEntity get(int id, DBEntityType entityType)
 	{
 		session = factory.openSession();
 		Transaction tx = null;
@@ -42,6 +75,9 @@ public class DBManager {
 			case Contact:
 				entity = session.get(Contact.class, id);
 				break;
+			case Credential:
+				entity = session.get(Credential.class, id);
+				break;
 			default:
 				break;
 			}
@@ -54,7 +90,7 @@ public class DBManager {
 		}
 		return entity;
 	}
-	private int addToDataBase(Object obj)
+	public int addToDataBase(Object obj)
 	{
 		session = factory.openSession();
 		Transaction tx = null;
@@ -73,30 +109,13 @@ public class DBManager {
 		return id;
 	}
 	
-	private Boolean deleteFromDataBase(int id,DBEntityType entityType)
+	public Boolean deleteFromDataBase(int id,DBEntityType entityType)
 	{
+		IDBEntity entity = get(id, entityType);
 		session = factory.openSession();
 		Transaction tx = null;
 		try {
 			tx = session.beginTransaction();
-			IDBEntity entity;
-			switch (entityType)
-			{
-			case User:
-				entity= session.get(User.class, id);
-				break;
-			case UserEvent:
-				entity = session.get(UserEvent.class, id);
-				break;
-			case Event:
-				entity = session.get(Event.class, id);
-				break;
-			case Contact:
-				entity = session.get(Contact.class, id);
-				break;
-			default:
-				return false;
-			}
 			if(entity != null)
 			{
 				session.delete(entity);
@@ -114,30 +133,13 @@ public class DBManager {
 		return true;
 	}
 	
-	private Boolean editInDataBase(int id,DBEntityType entityType,IDBEntity updatedObj)
+	public Boolean editInDataBase(int id,DBEntityType entityType,IDBEntity updatedObj)
 	{
+		IDBEntity entity = get(id, entityType);
 		session = factory.openSession();
 		Transaction tx = null;
 		try {
 			tx = session.beginTransaction();
-			IDBEntity entity;
-			switch (entityType)
-			{
-			case User:
-				entity= session.get(User.class, id);
-				break;
-			case UserEvent:
-				entity = session.get(UserEvent.class, id);
-				break;
-			case Event:
-				entity = session.get(Event.class, id);
-				break;
-			case Contact:
-				entity = session.get(Contact.class, id);
-				break;
-			default:
-				return false;
-			}
 			if(entity != null)
 			{
 				entity.update(updatedObj);
@@ -155,8 +157,7 @@ public class DBManager {
 		}
 		return true;
 	}
-	
-	
+
 	public void execute(DBAction action)
 	{
 		switch(action)
