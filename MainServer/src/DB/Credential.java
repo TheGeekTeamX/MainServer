@@ -27,9 +27,8 @@ public class Credential implements IDBEntity{
 	}
 
 
-	public Credential(int id, User user, String credntial) {
+	public Credential(User user, String credntial) {
 		super();
-		this.id = id;
 		this.user = user;
 		this.credntial = credntial;
 	}

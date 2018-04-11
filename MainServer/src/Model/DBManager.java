@@ -5,17 +5,14 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.query.Query;
-
 import DB.*;
 import Enums.*;
+import ResponsesEntitys.*;
 
 
 public class DBManager {
@@ -29,6 +26,25 @@ public class DBManager {
 		System.out.println(u.toString());
 	}
 
+	public LinkedList<EventData> getEventsList(int userId)
+	{
+		session = factory.openSession();
+		session.beginTransaction();
+		ArrayList<UserEvent> userEventList = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where UserId = " + userId)).list();
+		if(userEventList == null)
+			return null;
+		LinkedList<EventData> eventsList = new LinkedList<>();
+		userEventList.forEach(ue->{
+			ArrayList<UserEvent> participants = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where EventId = " + ue.getEvent().getId())).list();
+			LinkedList<String> participantsNames = new LinkedList<>();
+			participants.forEach(p -> {participantsNames.add(p.getUser().getFullName());});
+			eventsList.add(new EventData(ue.getId(), participantsNames, ue.getEvent().getDateCreated()));
+
+		});
+		session.close();
+		return eventsList;
+	}
+	
 	public ArrayList<Contact> getContactsList(int userId)
 	{
 		session = factory.openSession();
@@ -43,7 +59,7 @@ public class DBManager {
 		session.beginTransaction();
 		ArrayList<User> list = (ArrayList<User>)session.createQuery(String.format("from Users where Email like '%1$s'", email)).list();
 		session.close();
-		return list != null ? (User)list.get(0) : null;
+		return list != null ? (list.size() != 0 ? (User)list.get(0) : null) : null;
 	}
 	public Credential getCredential(int userId)
 	{
