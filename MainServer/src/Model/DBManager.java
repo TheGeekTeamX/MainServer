@@ -20,12 +20,21 @@ public class DBManager {
 	private Session session;
 	private static DBManager instance = null;
 	
+	
 	public void test()
 	{
 		User u = getUser("Test123@gmail.com");
 		System.out.println(u.toString());
 	}
-
+	
+	public ProfilePicture getUserProfilePicture(int userId)
+	{
+		session = factory.openSession();
+		session.beginTransaction();
+		ArrayList<ProfilePicture> list = (ArrayList<ProfilePicture>)session.createQuery(String.format("from ProfilePictures where UserId = " + userId)).list();
+		return list != null ? (list.size() != 0 ? list.get(0) : null) : null;
+	}
+	
 	public LinkedList<EventData> getEventsList(int userId)
 	{
 		session = factory.openSession();
@@ -59,15 +68,15 @@ public class DBManager {
 		session.beginTransaction();
 		ArrayList<User> list = (ArrayList<User>)session.createQuery(String.format("from Users where Email like '%1$s'", email)).list();
 		session.close();
-		return list != null ? (list.size() != 0 ? (User)list.get(0) : null) : null;
+		return list != null ? (list.size() != 0 ? list.get(0) : null) : null;
 	}
 	public Credential getCredential(int userId)
 	{
 		session = factory.openSession();
 		session.beginTransaction();
-		LinkedList<Credential> list = (LinkedList<Credential>)session.createQuery("from Credentials where UserId = " + userId).list();
+		ArrayList<Credential> list = (ArrayList<Credential>)session.createQuery("from Credentials where UserId = " + userId).list();
 		session.close();
-		return list != null ? (Credential)list.get(0) : null;
+		return list != null ? list.get(0) : null;
 	}
 	
 	public IDBEntity get(int id, DBEntityType entityType)
@@ -93,6 +102,9 @@ public class DBManager {
 				break;
 			case Credential:
 				entity = session.get(Credential.class, id);
+				break;
+			case ProfilePicture:
+				entity = session.get(ProfilePicture.class, id);
 				break;
 			default:
 				break;

@@ -33,4 +33,10 @@ create table UserEvents(
 	foreign key (EventId) references Events(Id)	
 )
 
+create table ProfilePictures(
+	Id integer identity(1,1) primary key,
+	UserId int not null,
+	ProfilePictureURL nvarchar(50) not null,
+	foreign key (UserId) references Users(Id),
+)
 
