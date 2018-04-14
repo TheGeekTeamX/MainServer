@@ -4,32 +4,32 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Observable;
 import java.util.Observer;
-
-import org.hibernate.annotations.common.util.impl.Log;
-import org.hibernate.loader.custom.Return;
-
 import DB.*;
-import Enums.DBEntityType;
-import Enums.ErrorType;
+import Enums.*;
 import Model.MainModel;
 import Requests.*;
 import Responses.*;
-import ResponsesEntitys.EventData;
-import ResponsesEntitys.UserData;
+import ResponsesEntitys.*;
 
 public class MainViewModel extends Observable implements Observer,IController {
 	private MainModel model;
 
-	public ResponseData ProfilePicture(RequestData reqData)
+	public ResponseData CreateEvent(RequestData reqData)
 	{
 		User user = getUserFromDB(reqData);
 		if(user == null)
 			return new ErrorResponse(ErrorType.UserIsNotExist);
-		ProfilePicture pp = model.getDbManager().getUserProfilePicture(user.getId());
-		if (pp == null)
-			return new ErrorResponse(ErrorType.UserHasNoProfilePicture);
-		else
-			/*Attach Image To Response*/
+		String[] participantsEmail = ((CreateEventRequestData)reqData).getUsersEmails().split(",");
+		int i=0;
+		LinkedList<User> participants = new LinkedList<>();
+		do {
+			User u = model.getDbManager().getUser(participantsEmail[i]);
+			if(u!=null)
+				participants.add(u);
+			i++;
+		}while(i < participantsEmail.length);
+		
+		
 		return null;
 	}
 	
@@ -70,6 +70,31 @@ public class MainViewModel extends Observable implements Observer,IController {
 		return null;
 	}
 	
+	public ResponseData UpdateProfilePicture(RequestData reqData)
+	{
+		User user = getUserFromDB(reqData);
+		if(user == null)
+			return new ErrorResponse(ErrorType.UserIsNotExist);
+		ProfilePicture pp = model.getDbManager().getUserProfilePicture(user.getId());
+		if (pp == null)
+			return new ErrorResponse(ErrorType.UserHasNoProfilePicture);
+		pp.setProfilePictureUrl(((UpdateProfilePictureRequestData)reqData).getNewProfilePictureUrl());
+		return new BooleanResponseData(model.getDbManager().editInDataBase(pp.getId(), DBEntityType.ProfilePicture, pp));
+	}
+	
+	public ResponseData ProfilePicture(RequestData reqData)
+	{
+		User user = getUserFromDB(reqData);
+		if(user == null)
+			return new ErrorResponse(ErrorType.UserIsNotExist);
+		ProfilePicture pp = model.getDbManager().getUserProfilePicture(user.getId());
+		if (pp == null)
+			return new ErrorResponse(ErrorType.UserHasNoProfilePicture);
+		else
+			/*Attach Image To Response*/
+		return null;
+	}
+	
 	public ResponseData Login(RequestData reqData)
 	{
 		User user = getUserFromDB(reqData);
@@ -97,6 +122,7 @@ public class MainViewModel extends Observable implements Observer,IController {
 	public MainViewModel(MainModel model) {
 		super();
 		this.model = model;
+		UpdateProfilePicture(new UpdateProfilePictureRequestData("A", "5URLNEW"));
 	}
 	
 	private ResponseData CreateUser(RequestData reqData)

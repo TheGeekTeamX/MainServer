@@ -6,6 +6,8 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToOne;
 
 @Entity(name = "Events")
 public class Event implements IDBEntity{
@@ -14,8 +16,11 @@ public class Event implements IDBEntity{
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name="Id")
 	private int id;
-	@Column(name = "AdminId")
-	private int adminId;
+    @OneToOne(targetEntity = User.class)
+    @JoinColumn(name = "AdminId")
+    private User adminId;
+	@Column(name = "Title")
+	private String title;
 	@Column(name = "DateCreated")
 	private Date dateCreated;
 	@Column(name = "IsFinished")
@@ -28,7 +33,7 @@ public class Event implements IDBEntity{
 		super();
 		// TODO Auto-generated constructor stub
 	}
-	public Event(int adminId, Date dateCreated, int isFinished, int isConverted) {
+	public Event(User adminId, Date dateCreated, int isFinished, int isConverted) {
 		super();
 		this.adminId = adminId;
 		this.dateCreated = dateCreated;
@@ -41,10 +46,10 @@ public class Event implements IDBEntity{
 	public void setId(int id) {
 		this.id = id;
 	}
-	public int getAdminId() {
+	public User getAdminId() {
 		return adminId;
 	}
-	public void setAdminId(int adminId) {
+	public void setAdminId(User adminId) {
 		this.adminId = adminId;
 	}
 	public Date getDateCreated() {

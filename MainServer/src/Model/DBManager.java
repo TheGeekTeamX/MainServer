@@ -3,6 +3,7 @@ package Model;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.hibernate.HibernateException;
@@ -16,10 +17,22 @@ import ResponsesEntitys.*;
 
 
 public class DBManager {
+	private static ReentrantLock lock;
 	private static SessionFactory factory;
 	private Session session;
 	private static DBManager instance = null;
 	
+	private Transaction startSession()
+	{
+		lock.lock();
+		session = factory.openSession();
+		return session.beginTransaction();
+	}
+	private void closeSession()
+	{
+		session.close();
+		lock.unlock();
+	}
 	
 	public void test()
 	{
@@ -29,16 +42,15 @@ public class DBManager {
 	
 	public ProfilePicture getUserProfilePicture(int userId)
 	{
-		session = factory.openSession();
-		session.beginTransaction();
+		startSession();
 		ArrayList<ProfilePicture> list = (ArrayList<ProfilePicture>)session.createQuery(String.format("from ProfilePictures where UserId = " + userId)).list();
+		closeSession();
 		return list != null ? (list.size() != 0 ? list.get(0) : null) : null;
 	}
 	
 	public LinkedList<EventData> getEventsList(int userId)
 	{
-		session = factory.openSession();
-		session.beginTransaction();
+		startSession();
 		ArrayList<UserEvent> userEventList = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where UserId = " + userId)).list();
 		if(userEventList == null)
 			return null;
@@ -50,42 +62,38 @@ public class DBManager {
 			eventsList.add(new EventData(ue.getId(), participantsNames, ue.getEvent().getDateCreated()));
 
 		});
-		session.close();
+		closeSession();
 		return eventsList;
 	}
 	
 	public ArrayList<Contact> getContactsList(int userId)
 	{
-		session = factory.openSession();
-		session.beginTransaction();
+		startSession();
 		ArrayList<Contact> list = (ArrayList<Contact>)session.createQuery(String.format("from Contacts where UserId = " + userId)).list();
-		session.close();
+		closeSession();
 		return list;
 	}
 	public User getUser(String email)
 	{
-		session = factory.openSession();
-		session.beginTransaction();
+		startSession();
 		ArrayList<User> list = (ArrayList<User>)session.createQuery(String.format("from Users where Email like '%1$s'", email)).list();
-		session.close();
+		closeSession();
 		return list != null ? (list.size() != 0 ? list.get(0) : null) : null;
 	}
 	public Credential getCredential(int userId)
 	{
-		session = factory.openSession();
-		session.beginTransaction();
+		startSession();
 		ArrayList<Credential> list = (ArrayList<Credential>)session.createQuery("from Credentials where UserId = " + userId).list();
-		session.close();
+		closeSession();
 		return list != null ? list.get(0) : null;
 	}
 	
 	public IDBEntity get(int id, DBEntityType entityType)
 	{
-		session = factory.openSession();
 		Transaction tx = null;
 		IDBEntity entity = null;
 		try {
-			tx = session.beginTransaction();
+			tx = startSession();
 			switch (entityType)
 			{
 			case User:
@@ -114,17 +122,16 @@ public class DBManager {
 				tx.rollback();
 			return null;
 		} finally {
-			session.close();
+			closeSession();
 		}
 		return entity;
 	}
 	public int addToDataBase(Object obj)
 	{
-		session = factory.openSession();
 		Transaction tx = null;
 		int id=0;
 		try {
-			tx = session.beginTransaction();
+			tx = startSession();
 			id = (int)session.save(obj);
 			tx.commit();
 		} catch (HibernateException e) {
@@ -132,7 +139,7 @@ public class DBManager {
 				tx.rollback();
 			return -1;
 		} finally {
-			session.close();
+			closeSession();
 		}
 		return id;
 	}
@@ -140,10 +147,9 @@ public class DBManager {
 	public Boolean deleteFromDataBase(int id,DBEntityType entityType)
 	{
 		IDBEntity entity = get(id, entityType);
-		session = factory.openSession();
 		Transaction tx = null;
 		try {
-			tx = session.beginTransaction();
+			tx = startSession();
 			if(entity != null)
 			{
 				session.delete(entity);
@@ -156,7 +162,7 @@ public class DBManager {
 				tx.rollback();
 			return false;
 		} finally {
-			session.close();
+			closeSession();
 		}
 		return true;
 	}
@@ -164,10 +170,9 @@ public class DBManager {
 	public Boolean editInDataBase(int id,DBEntityType entityType,IDBEntity updatedObj)
 	{
 		IDBEntity entity = get(id, entityType);
-		session = factory.openSession();
 		Transaction tx = null;
 		try {
-			tx = session.beginTransaction();
+			tx = startSession();
 			if(entity != null)
 			{
 				entity.update(updatedObj);
@@ -181,24 +186,11 @@ public class DBManager {
 				tx.rollback();
 			return false;
 		} finally {
-			session.close();
+			closeSession();
 		}
 		return true;
 	}
 
-	public void execute(DBAction action)
-	{
-		switch(action)
-		{
-		case Add:
-			break;
-		case Edit:
-			break;
-		case Delete:
-			break;
-		}
-		
-	}
 	public static DBManager getInstance()
 	{
 		if (instance == null)
@@ -213,6 +205,7 @@ public class DBManager {
 		Logger.getLogger("org.hibernate").setLevel(Level.SEVERE);
 		Configuration configuration = (new Configuration()).configure();
 		factory = configuration.buildSessionFactory(); 
+		lock = new ReentrantLock();
 	}
 
 }

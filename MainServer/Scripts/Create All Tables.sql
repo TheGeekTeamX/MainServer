@@ -9,6 +9,7 @@ create table Users(
 create table Events(
 	Id integer identity(1,1) primary key,
 	AdminId integer not null,
+	Title nvarchar(50) not null,
 	DateCreated date not null,
 	IsFinished bit not null,
 	IsConverted bit not null,
@@ -40,3 +41,9 @@ create table ProfilePictures(
 	foreign key (UserId) references Users(Id),
 )
 
+create table Credentials(
+	Id integer identity(1,1) primary key,
+	UserId int not null,
+	Credential nvarchar(50) not null,
+	foreign key (UserId) references Users(Id),
+)

@@ -14,6 +14,7 @@
         <mapping class="DB.Event"></mapping>
         <mapping class="DB.Contact"></mapping>
         <mapping class="DB.Credential"></mapping>
+        <mapping class="DB.ProfilePicture"></mapping>
     </session-factory>
 </hibernate-configuration>
  
