@@ -16,7 +16,6 @@ private Gson gson;
 		super();
 	}
 
-	@Override
 	public void handleClient(SocketIOClient client, IController controller, String data) {
 		
 		RequestData rd = gson.fromJson(data, RequestData.class);
