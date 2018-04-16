@@ -4,8 +4,8 @@ import java.net.Socket;
 
 import com.corundumstudio.socketio.SocketIOClient;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 
+import ClientHandler.IClientHandler;
 import Requests.*;
 import ViewModel.IController;
 
