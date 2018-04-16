@@ -1,20 +1,80 @@
 package ViewModel;
 
+import java.sql.Date;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Observable;
 import java.util.Observer;
+
+import com.corundumstudio.socketio.SocketIOClient;
+
+import ClientHandler.ClientHandler;
 import DB.*;
 import Enums.*;
 import Model.MainModel;
 import Requests.*;
 import Responses.*;
 import ResponsesEntitys.*;
+import UpdateObjects.EventInvite;
 
 public class MainViewModel extends Observable implements Observer,IController {
 	private MainModel model;
-
-	public ResponseData CreateEvent(RequestData reqData)
+	private HashMap<Integer, SocketIOClient> connections;
+	
+	private void notifyParticipants(Event event)
+	{
+		ArrayList<User> participants = model.getDbManager().getPariticpants(event.getId());
+		participants.forEach(p -> {
+			SocketIOClient client = connections.get(p.getId());
+			if(client != null)
+			{
+				
+			}
+		});
+	}
+	
+	private ResponseData CloseEvent(RequestData reqData)
+	{
+		User user = getUserFromDB(reqData);
+		if(user == null)
+			return new ErrorResponse(ErrorType.UserIsNotExist);
+		//edit in DB
+		Event event = (Event) model.getDbManager().get(((CloseEventRequestData)reqData).getEventId(), DBEntityType.Event);
+		event.setIsFinished(1);
+		if(model.getDbManager().editInDataBase(event.getId(), DBEntityType.Event, event))
+			return new ErrorResponse(ErrorType.TechnicalError);
+		else
+		{			
+			//notify to all pariticpants
+			notifyParticipants(event);
+			return new BooleanResponseData(true);
+		}
+	}
+	
+	private ResponseData EventProtocol(RequestData reqData)
+	{
+		User user = getUserFromDB(reqData);
+		if(user == null)
+			return new ErrorResponse(ErrorType.UserIsNotExist);
+		int eventId = ((EventProtocolRequestData)reqData).getEventID();
+		
+		return null;
+	}
+	
+	private ResponseData PendingEvents(RequestData reqData)
+	{
+		User user = getUserFromDB(reqData);
+		if(user == null)
+			return new ErrorResponse(ErrorType.UserIsNotExist);
+		LinkedList<EventData> events = model.getDbManager().getRelatedPendingEvents(user.getId());
+		if(events == null)
+			return new ErrorResponse(ErrorType.NoPendingEvents);
+		return new PendingEventsResponseData(events);
+	}
+	
+	private ResponseData CreateEvent(RequestData reqData)
 	{
 		User user = getUserFromDB(reqData);
 		if(user == null)
@@ -29,8 +89,20 @@ public class MainViewModel extends Observable implements Observer,IController {
 			i++;
 		}while(i < participantsEmail.length);
 		
+		//create Event
+		Event e = new Event(user,((CreateEventRequestData)reqData).getTitle(), new Date(Calendar.getInstance().getTime().getTime()), 0, 0);
+		if (!(model.getDbManager().addToDataBase(e) > 0))
+			return new ErrorResponse(ErrorType.TechnicalError);	
+		//create UserEvent
+		ArrayList<Integer> ids = new ArrayList<>();
+		participants.forEach(p -> {
+			ids.add(p.getId());
+			model.getDbManager().addToDataBase(new UserEvent(p, e, 0));
+		});
 		
-		return null;
+		sendInvitesToUsers(e, ids);
+		
+		return new BooleanResponseData(true);
 	}
 	
 	@Override
@@ -42,9 +114,9 @@ public class MainViewModel extends Observable implements Observer,IController {
 		case ChangePasswordRequest:
 			return changePassword(reqData);//checked
 		case CloseEventRequest:
-			break;
+			return CloseEvent(reqData);
 		case CreateEventRequest:
-			break;
+			return CreateEvent(reqData);
 		case CreateUserRequest:
 			return CreateUser(reqData);//checked
 		case EditContactsListRequest:
@@ -52,17 +124,17 @@ public class MainViewModel extends Observable implements Observer,IController {
 		case EditUserRequest:
 			return EditUser(reqData);//checked
 		case EventProtocolRequest:
-			break;
+			return EventProtocol(reqData);
 		case EventsListRequest:
 			return EventsList(reqData);//checked
+		case PendingEventsRequest:
+			return PendingEvents(reqData);
 		case ContactsListRequest:
 			return ContactList(reqData);//checked
-		case LoginRequest:
-			return Login(reqData);//checked
 		case ProfilePictureRequest:
 			return ProfilePicture(reqData);
 		case UpdateProfilePictureRequest:
-			break;
+			return UpdateProfilePicture(reqData);
 		default:
 			System.out.println("default");
 			break;
@@ -70,7 +142,7 @@ public class MainViewModel extends Observable implements Observer,IController {
 		return null;
 	}
 	
-	public ResponseData UpdateProfilePicture(RequestData reqData)
+	private ResponseData UpdateProfilePicture(RequestData reqData)
 	{
 		User user = getUserFromDB(reqData);
 		if(user == null)
@@ -82,7 +154,7 @@ public class MainViewModel extends Observable implements Observer,IController {
 		return new BooleanResponseData(model.getDbManager().editInDataBase(pp.getId(), DBEntityType.ProfilePicture, pp));
 	}
 	
-	public ResponseData ProfilePicture(RequestData reqData)
+	private ResponseData ProfilePicture(RequestData reqData)
 	{
 		User user = getUserFromDB(reqData);
 		if(user == null)
@@ -95,19 +167,6 @@ public class MainViewModel extends Observable implements Observer,IController {
 		return null;
 	}
 	
-	public ResponseData Login(RequestData reqData)
-	{
-		User user = getUserFromDB(reqData);
-		if(user == null)
-			return new ErrorResponse(ErrorType.UserIsNotExist);
-		Credential credential = model.getDbManager().getCredential(user.getId());
-		if (credential == null)
-			return new ErrorResponse(ErrorType.TechnicalError);
-		if(reqData.getUserEmail().equals((credential.getUser().getEmail())) && ((LoginRequestData)reqData).getPassword().equals(credential.getCredntial()))
-			return new BooleanResponseData(true);
-		else
-			return new ErrorResponse(ErrorType.IncorrectCredentials);
-	}
 	
 	@Override	
 	public void update(Observable o, Object arg) {
@@ -122,7 +181,8 @@ public class MainViewModel extends Observable implements Observer,IController {
 	public MainViewModel(MainModel model) {
 		super();
 		this.model = model;
-		UpdateProfilePicture(new UpdateProfilePictureRequestData("A", "5URLNEW"));
+		connections = new HashMap<>();
+		//UpdateProfilePicture(new UpdateProfilePictureRequestData("A", "5URLNEW"));
 	}
 	
 	private ResponseData CreateUser(RequestData reqData)
@@ -244,4 +304,45 @@ public class MainViewModel extends Observable implements Observer,IController {
 			return new ErrorResponse(ErrorType.UserHasNoEvents);
 		return new EventsListResponseData(eventsList);
 	}
+
+	@Override
+	public Boolean addConnection(SocketIOClient client, String userName , String password) {
+		// TODO Auto-generated method stub
+		User user = model.getDbManager().getUser(userName);
+		if(user != null)
+		{
+			Credential credential = model.getDbManager().getCredential(user.getId());
+			if(credential != null)
+			{
+				if(password.equals(credential.getCredntial()))
+				{
+					connections.put(user.getId(), client);
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
+	
+	public void sendInvitesToUsers(Event event, ArrayList<Integer> users)
+	{
+		ArrayList<String> participants = new ArrayList<>();
+		users.forEach(u -> {
+			User user = (User) model.getDbManager().get(u, DBEntityType.User);
+			participants.add(user.getFullName());
+		});
+		ClientHandler ch = new ClientHandler();
+		users.forEach(u -> {
+			SocketIOClient sock = connections.get(u);
+			if(sock != null)
+			{
+				ch.sendToClient(sock, "Invite", new EventInvite(event.getId(), event.getTitle(), participants));
+			}
+		});
+	}
+	
+	
+	
+	
 }

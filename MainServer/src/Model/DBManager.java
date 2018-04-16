@@ -22,6 +22,25 @@ public class DBManager {
 	private Session session;
 	private static DBManager instance = null;
 	
+	public ArrayList<User> getPariticpants(int eventId)
+	{
+		startSession();
+		ArrayList<UserEvent> list = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where EventId = " + eventId)).list();
+		if(list == null)
+			return null;
+		ArrayList<User> users = new ArrayList<>();
+		list.forEach(ue -> {
+			users.add(ue.getUser());
+		});
+		closeSession();
+		return users;
+	}
+	
+	private Protocol getProtocol(int eventId)
+	{
+		return null;
+	}
+	
 	private Transaction startSession()
 	{
 		lock.lock();
@@ -113,6 +132,9 @@ public class DBManager {
 				break;
 			case ProfilePicture:
 				entity = session.get(ProfilePicture.class, id);
+				break;
+			case Protocol:
+				entity = session.get(Protocol.class, id);
 				break;
 			default:
 				break;
@@ -208,4 +230,25 @@ public class DBManager {
 		lock = new ReentrantLock();
 	}
 
+	public LinkedList<EventData> getRelatedPendingEvents(int userId)
+	{
+		ArrayList<UserEvent> pendingEvents = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where IsAccepted = 0 and UserId = " + userId)).list();
+		if(pendingEvents == null)
+			return null;
+		LinkedList<EventData> eventsData = new LinkedList<>();
+		pendingEvents.forEach(pe -> {
+			Event e = (Event) get(pe.getEvent().getId(), DBEntityType.Event);
+			if(e !=  null)
+			{
+				LinkedList<String> participantsNames = new LinkedList<>();
+				ArrayList<UserEvent> participants = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where EventId = " + e.getId())).list();
+				participants.forEach(p -> {
+					participantsNames.add(p.getUser().getFullName());
+				});
+				eventsData.add(new EventData(e.getId(), participantsNames, e.getDateCreated()));
+				
+			}
+		});
+		return eventsData;
+	}
 }

@@ -23,8 +23,16 @@ public class UserEvent implements IDBEntity{
     @OneToOne(targetEntity = Event.class)
     @JoinColumn(name = "EventId")
     private Event event;
+	@Column(name="IsAccepted")
+	private int isAccepted;
     
     
+	public int getIsAccepted() {
+		return isAccepted;
+	}
+	public void setIsAccepted(int isAccepted) {
+		this.isAccepted = isAccepted;
+	}
 	public UserEvent() {
 		super();
 		// TODO Auto-generated constructor stub
@@ -47,10 +55,11 @@ public class UserEvent implements IDBEntity{
 	public void setEvent(Event event) {
 		this.event = event;
 	}
-	public UserEvent(User user, Event event) {
+	public UserEvent(User user, Event event, int isAccepted) {
 		super();
 		this.user = user;
 		this.event = event;
+		this.isAccepted = isAccepted;
 	}
 	@Override
 	public void update(IDBEntity other) {
@@ -59,6 +68,7 @@ public class UserEvent implements IDBEntity{
 		{
 			this.user = ((UserEvent)other).user;
 			this.event = ((UserEvent)other).event;
+			this.isAccepted = ((UserEvent)other).isAccepted;
 		}
 	}
     

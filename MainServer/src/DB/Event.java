@@ -33,15 +33,23 @@ public class Event implements IDBEntity{
 		super();
 		// TODO Auto-generated constructor stub
 	}
-	public Event(User adminId, Date dateCreated, int isFinished, int isConverted) {
+	public Event(User adminId,String title, Date dateCreated, int isFinished, int isConverted) {
 		super();
+		this.title = title;
 		this.adminId = adminId;
 		this.dateCreated = dateCreated;
 		this.isFinished = isFinished;
 		this.isConverted = isConverted;
 	}
-	public int getId() {
+	public 
+	int getId() {
 		return id;
+	}
+	public String getTitle() {
+		return title;
+	}
+	public void setTitle(String title) {
+		this.title = title;
 	}
 	public void setId(int id) {
 		this.id = id;

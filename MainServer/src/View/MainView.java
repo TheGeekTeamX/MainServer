@@ -1,20 +1,19 @@
 package View;
 
-
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.net.URL;
 import java.util.Observable;
 import java.util.Observer;
 import java.util.ResourceBundle;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
+import com.corundumstudio.socketio.AckRequest;
+import com.corundumstudio.socketio.Configuration;
+import com.corundumstudio.socketio.SocketIOClient;
+import com.corundumstudio.socketio.SocketIOServer;
+import com.corundumstudio.socketio.listener.DataListener;
 import ClientHandler.ClientHandler;
 import ClientHandler.IClientHandler;
 import DB.User;
-import ViewModel.ConnectionData;
 import ViewModel.MainViewModel;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
@@ -33,11 +32,9 @@ import javafx.scene.shape.Circle;
 
 public class MainView implements Observer,Initializable {
 
+	private static SocketIOServer server;
 	private MainViewModel viewModel;
 	private Boolean isServerRunning;
-	private Boolean isNeedToStop;
-	private Thread serverThread;	
-	private ServerSocket socket;
 	private PausableThreadPoolExecutor executionPool;
 	@FXML
 	private Circle state;
@@ -71,13 +68,6 @@ public class MainView implements Observer,Initializable {
 	public void initServer()
 	{
 		isServerRunning = false;
-		isNeedToStop = false;
-		try {
-			socket = new ServerSocket(8888);//CONFIG
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 		executionPool = new PausableThreadPoolExecutor(10, 1000, 120, TimeUnit.SECONDS, new ArrayBlockingQueue<>(10));
 	}
 	
@@ -129,25 +119,9 @@ public class MainView implements Observer,Initializable {
 	public void stopServerThread()
 	{
 		isServerRunning = false;
-		isNeedToStop = true;
 	}
-	public void createNewClientHandler(Socket newConnection)
-	{
-		
-		IClientHandler ch = new ClientHandler();
-		executionPool.execute(new Runnable() {
-			
-			@Override
-			public void run() {
-				// TODO Auto-generated method stub
-				ch.handleClient(newConnection , viewModel);
-				
-			}
-		});;
-		
-		//ch.handleClient(newConnection);
-	}
-	public void createNewConnection(Socket socket)
+
+	public void createNewConnection(SocketIOClient client, String data)
 	{
 		Platform.runLater(new Runnable() {
 			
@@ -157,43 +131,77 @@ public class MainView implements Observer,Initializable {
 				setConnectionsNum(getConnectionsNum()+1);
 				setOnlineConnectionsNum(getOnlineConnectionsNum()+1);			
 			}
-		});
-		createNewClientHandler(socket);
-	}
-	public void startServerThread()
-	{
-		isServerRunning = true;
-		isNeedToStop = false;
-		
-		serverThread = new Thread(new Runnable() {
+		});	
+		IClientHandler ch = new ClientHandler();
+		executionPool.execute(new Runnable() {
 			
 			@Override
 			public void run() {
 				// TODO Auto-generated method stub
-				while(!isNeedToStop)
+				ch.connectionSetUp(client ,viewModel, data);
+				
+			}
+		});
+	}
+	
+	public void newRequest(SocketIOClient client, String data)
+	{
+		IClientHandler ch = new ClientHandler();
+		executionPool.execute(new Runnable() {
+			
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				ch.handleClient(client , viewModel , data);
+				
+			}
+		});
+	}
+	
+	
+	
+	public void startServerThread()
+	{
+		isServerRunning = true;
+		Configuration config = new Configuration();
+		config.setHostname("localhost");
+		config.setPort(8888);
+		server = new SocketIOServer(config);
+		
+		server.addEventListener("Connect", String.class, new DataListener<String>() {
+
+			@Override
+			public void onData(SocketIOClient client, String data, AckRequest ackRequest) {
+				// TODO Auto-generated method stub
+				if(isServerRunning)
+					createNewConnection(client, data);
+			}
+		});
+		
+		server.addEventListener("Request", String.class, new DataListener<String>() {
+
+			@Override
+			public void onData(SocketIOClient client, String data, AckRequest ackRequest) {
+				// TODO Auto-generated method stub
+				if (isServerRunning)
 				{
-					try {
-						Socket newConnection = socket.accept();
-						createNewConnection(newConnection);
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					if (isNeedToStop)
-					{
-						//handle client
+					IClientHandler ch = new ClientHandler();
+					executionPool.execute(new Runnable() {
 						
-					}
-					else
-					{
-						//Can't handle client right now..Server need to stop
-						 
-					}
+						@Override
+						public void run() {
+							// TODO Auto-generated method stub
+							ch.handleClient(client ,viewModel, data);
+							
+						}
+					});
 				}
 				
 			}
 		});
-		serverThread.start();
+		server.start();
+		
+		
 		
 	}
 	

@@ -30,6 +30,7 @@ create table UserEvents(
 	Id integer identity(1,1) primary key,
 	UserId int not null,
 	EventId int not null,
+	IsAccepted int not null,
 	foreign key (UserId) references Users(Id),
 	foreign key (EventId) references Events(Id)	
 )
@@ -46,4 +47,10 @@ create table Credentials(
 	UserId int not null,
 	Credential nvarchar(50) not null,
 	foreign key (UserId) references Users(Id),
+)
+
+create table Protocols(
+	Id integer identity(1,1) primary key,
+	EventId int not null,
+	ProtocolURL nvarchar(50) not null
 )
