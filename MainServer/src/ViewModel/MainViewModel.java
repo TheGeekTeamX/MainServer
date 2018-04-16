@@ -7,9 +7,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Observable;
 import java.util.Observer;
-
 import com.corundumstudio.socketio.SocketIOClient;
-
 import ClientHandler.ClientHandler;
 import DB.*;
 import Enums.*;
@@ -17,22 +15,46 @@ import Model.MainModel;
 import Requests.*;
 import Responses.*;
 import ResponsesEntitys.*;
-import UpdateObjects.EventInvite;
+import UpdateObjects.*;
 
 public class MainViewModel extends Observable implements Observer,IController {
 	private MainModel model;
 	private HashMap<Integer, SocketIOClient> connections;
 	
+	private ResponseData LeaveEvent(RequestData reqData)
+	{
+		User user = getUserFromDB(reqData);
+		if(user == null)
+			return new ErrorResponse(ErrorType.UserIsNotExist);
+		ArrayList<User> participants = model.getDbManager().getPariticpants(((LeaveEventRequestData)reqData).getEventId());
+		if(participants != null)
+		{
+			ClientHandler ch = new ClientHandler();
+			participants.forEach(p -> {
+				SocketIOClient client = connections.get(p.getId());
+				if(client != null)
+				{
+					ch.sendToClient(client, "UserLeft", new UserLeft(user.getFullName()));
+				}
+			});
+		}
+		return null;
+	}
+	
 	private void notifyParticipants(Event event)
 	{
 		ArrayList<User> participants = model.getDbManager().getPariticpants(event.getId());
-		participants.forEach(p -> {
-			SocketIOClient client = connections.get(p.getId());
-			if(client != null)
-			{
-				
-			}
-		});
+		ClientHandler ch = new ClientHandler();
+		if(participants != null)
+		{			
+			participants.forEach(p -> {
+				SocketIOClient client = connections.get(p.getId());
+				if(client != null)
+				{
+					ch.sendToClient(client, "CloseEvent", new CloseEvent(event.getId()));
+				}
+			});
+		}
 	}
 	
 	private ResponseData CloseEvent(RequestData reqData)
@@ -135,6 +157,8 @@ public class MainViewModel extends Observable implements Observer,IController {
 			return ProfilePicture(reqData);
 		case UpdateProfilePictureRequest:
 			return UpdateProfilePicture(reqData);
+		case LeaveEvent:
+			return LeaveEvent(reqData);
 		default:
 			System.out.println("default");
 			break;
