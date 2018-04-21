@@ -1,23 +1,20 @@
 package ClientHandler;
 
-import java.net.Socket;
-
 import com.corundumstudio.socketio.SocketIOClient;
 import com.google.gson.Gson;
-
 import ClientHandler.IClientHandler;
 import Requests.*;
 import ViewModel.IController;
 
-public class ClientHandler implements IClientHandler{
-private Gson gson;
-	
+public class ClientHandler implements IClientHandler {
+	private Gson gson;
+
 	public ClientHandler() {
-		super();
+		this.gson = new Gson();
 	}
 
 	public void handleClient(SocketIOClient client, IController controller, String data) {
-		
+
 		RequestData rd = gson.fromJson(data, RequestData.class);
 		switch (rd.getType()) {
 		case AddFriendRequest:
@@ -33,10 +30,11 @@ private Gson gson;
 		case CreateUserRequest:
 			sendToClient(client, "Response", controller.execute(gson.fromJson(data, CreateUserRequestData.class)));
 		case EditContactsListRequest:
-			sendToClient(client, "Response", controller.execute(gson.fromJson(data, EditContactsListRequestData.class)));
+			sendToClient(client, "Response",controller.execute(gson.fromJson(data, EditContactsListRequestData.class)));
 		case EditUserRequest:
 			sendToClient(client, "Response", controller.execute(gson.fromJson(data, EditUserRequestData.class)));
 		case EventProtocolRequest:
+			sendToClient(client, "Response", controller.execute(gson.fromJson(data, EventProtocolRequestData.class)));
 			break;
 		case EventsListRequest:
 			sendToClient(client, "Response", controller.execute(gson.fromJson(data, EventsListRequestData.class)));
@@ -45,6 +43,8 @@ private Gson gson;
 		case ProfilePictureRequest:
 			sendToClient(client, "Response", controller.execute(gson.fromJson(data, ProfilePictureRequestData.class)));
 		case UpdateProfilePictureRequest:
+			sendToClient(client, "Response",
+					controller.execute(gson.fromJson(data, UpdateProfilePictureRequestData.class)));
 			break;
 		default:
 			System.out.println("default");
@@ -55,19 +55,17 @@ private Gson gson;
 	@Override
 	public void connectionSetUp(SocketIOClient client, IController controller, String data) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void sendToClient(SocketIOClient client, String event, Object obj) {
 		// TODO Auto-generated method stub
 
-	    String jsonString = gson.toJson(obj);
+		String jsonString = gson.toJson(obj);
 		client.sendEvent(event, jsonString);
 	}
-	
 
 	
 	
-
 }
