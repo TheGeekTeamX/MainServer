@@ -4,8 +4,8 @@ import java.net.Socket;
 
 import com.corundumstudio.socketio.SocketIOClient;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 
+import ClientHandler.IClientHandler;
 import Requests.*;
 import ViewModel.IController;
 
@@ -16,8 +16,6 @@ private Gson gson;
 		super();
 	}
 
-
-	@Override
 	public void handleClient(SocketIOClient client, IController controller, String data) {
 		
 		RequestData rd = gson.fromJson(data, RequestData.class);
@@ -28,8 +26,10 @@ private Gson gson;
 			sendToClient(client, "Response", controller.execute(gson.fromJson(data, ChangePasswordRequestData.class)));
 		case CloseEventRequest:
 			sendToClient(client, "Response", controller.execute(gson.fromJson(data, CloseEventRequestData.class)));
+			break;
 		case CreateEventRequest:
 			sendToClient(client, "Response", controller.execute(gson.fromJson(data, CreateEventRequestData.class)));
+			break;
 		case CreateUserRequest:
 			sendToClient(client, "Response", controller.execute(gson.fromJson(data, CreateUserRequestData.class)));
 		case EditContactsListRequest:
