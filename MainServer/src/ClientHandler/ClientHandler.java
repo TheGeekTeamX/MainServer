@@ -16,6 +16,7 @@ private Gson gson;
 		super();
 	}
 
+
 	@Override
 	public void handleClient(SocketIOClient client, IController controller, String data) {
 		
@@ -27,10 +28,8 @@ private Gson gson;
 			sendToClient(client, "Response", controller.execute(gson.fromJson(data, ChangePasswordRequestData.class)));
 		case CloseEventRequest:
 			sendToClient(client, "Response", controller.execute(gson.fromJson(data, CloseEventRequestData.class)));
-			break;
 		case CreateEventRequest:
 			sendToClient(client, "Response", controller.execute(gson.fromJson(data, CreateEventRequestData.class)));
-			break;
 		case CreateUserRequest:
 			sendToClient(client, "Response", controller.execute(gson.fromJson(data, CreateUserRequestData.class)));
 		case EditContactsListRequest:
